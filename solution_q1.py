@@ -33,14 +33,18 @@ CPT_Alarm = {
 }
 # John Calls (J) given Alarm (A)
 CPT_JohnCalls = {
-    True: 0.9, 
-    False: 0.1
+    (True, True): 0.9,  # P(JohnCalls=True | Alarm=True)
+    (False, True): 0.05,  # P(JohnCalls=False | Alarm=True)
+    (True, False): 0.1, # P(JohnCalls=True | Alarm=False)
+    (False, False): 0.95  # P(JohnCalls=False | Alarm=False)
 }
 
 # Mary Calls (M) given Alarm (A)
 CPT_MaryCalls = {
-    True: {True: 0.7, False: 0.3},
-    False: {True: 0.01, False: 0.99}
+   (True, True): 0.7,  # P(MaryCalls=True | Alarm=True)
+    (True, False): 0.01,  # P(MaryCalls=True | Alarm=False)
+    (False, True): 0.3,  # P(MaryCalls=False | Alarm=True)
+    (False, False): 0.99  # P(MaryCalls=False | Alarm=False)
 }
 
 # Marginalize a variable
