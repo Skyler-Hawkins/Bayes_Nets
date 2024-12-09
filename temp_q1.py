@@ -40,7 +40,7 @@ P_M_given_A = pd.DataFrame({
 def elimination_order(factors, query_var, evidence):
     all_vars = set()
     for factor in factors: 
-        all_vars.update([col for col in factors.columns if ncol not in ['prob']])
+        all_vars.update([col for col in factors.columns if col not in ['prob']])
     return None
 
 
@@ -171,7 +171,7 @@ def variable_elimination(query_var, evidence, factors, elimination_order):
 query_var = ['B']
 evidence = {'J': True}
 factors = [P_B, P_E, P_A_given_B_E, P_J_given_A, P_M_given_A]
-all_vars = ['E', 'A', 'M', 'J', 'E'] 
+all_vars = ['E', 'A', 'M', 'J', 'E']  
 
 def get_elimination_order(query_var, evidence, all_vars):
     vars_to_eliminate = []
