@@ -166,13 +166,25 @@ def variable_elimination(query_var, evidence, factors, elimination_order):
 
 
 
+
 # Define the query
 query_var = ['B']
 evidence = {'J': True}
 factors = [P_B, P_E, P_A_given_B_E, P_J_given_A, P_M_given_A]
-elimination_order = ['E', 'A', 'M']  # Any valid elimination order excluding query/evidence variables
+all_vars = ['E', 'A', 'M', 'J', 'E'] 
 
-# Run variable elimination
+def get_elimination_order(query_var, evidence, all_vars):
+    vars_to_eliminate = []
+
+    # Add variables to eliminate if they are not in the query or evidence
+    for var in all_vars:
+        if var not in query_var and var not in evidence:
+            if var not in vars_to_eliminate:
+                vars_to_eliminate.append(var)
+    return vars_to_eliminate
+
+elimination_order = get_elimination_order(query_var, evidence, all_vars)
+
 result = variable_elimination(query_var, evidence, factors, elimination_order)
 
 # Print the result
