@@ -193,5 +193,6 @@ elimination_order = get_elimination_order(query_var, evidence, all_vars)
 result = variable_elimination(query_var, evidence, factors, elimination_order)
 
 # Print the result
-print("P(B | J = +j):")
+query = query_var[0] + " | " + ", ".join([f"{k} = {v}" for k, v in evidence.items()])    
+print(f"P({query})")
 print(result)
