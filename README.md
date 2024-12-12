@@ -1,2 +1,6 @@
 # CMPSC442Project4
-Bayes Nets
+Skyler Hawkins - CMPSC 442: Artificial Intelligence 
+
+## Bayes Nets
+
+### Implemented Variable Elimination and Inference By Enumeration 

@@ -1,163 +1,197 @@
+import pandas as pd
 
 '''
 Implemented By Skyler Hawkins
-Since we are hard-coding this for this specific inference query, we have no need to include things that would be restricted to a general case.
-(since we know john makes the call, we can restrict the factors to only include the case where john makes the call)
+External Libraries
+- pandas
+
+Given Permission to use libraries such as pandas, so I will represent the CPTS as dataframes
+
+We are instructed to build our code such that it can answer any query, but we are not explicitly told to add in the functionality to
+input different queries, since we are only going to be testing the default query. 
+I will build the code to be able to handle any query, but I will only test it with the default query.
 '''
 
+# Define the full CPTs as Pandas DataFrames
+P_B = pd.DataFrame({
+    'B': [True, False],
+    'P(B)': [0.001, 0.999]
+})
+
+P_E = pd.DataFrame({
+    'E': [True, False],
+    'P(E)': [0.002, 0.998]
+})
+
+P_A_given_B_E = pd.DataFrame({
+    'B': [True, True, True, True, False, False, False, False],
+    'E': [True, True, False, False, True, True, False, False],
+    'A': [True, False, True, False, True, False, True, False],
+    'P(A|B,E)': [0.95, 0.05, 0.94, 0.06, 0.29, 0.71, 0.001, 0.999]
+})
+
+P_J_given_A = pd.DataFrame({
+    'A': [True, True, False, False],
+    'J': [True, False, True, False],
+    'P(J|A)': [0.9, 0.1, 0.05, 0.95]
+})
+
+P_M_given_A = pd.DataFrame({
+    'A': [True, True, False, False],
+    'M': [True, False, True, False],
+    'P(M|A)': [0.7, 0.3, 0.01, 0.99]
+})
 
 
-# Conditional Probability Tables (CPTs)
-# Burglary (B)
-CPT_Burglary = {
-    True: 0.001,
-    False: 0.999
-}
 
-# Earthquake (E)
-CPT_Earthquake = {
-    True: 0.002,
-    False: 0.998
-}
+ 
+def multiply_factors(f1, f2, shared_vars):
 
-# Alarm (A) given Burglary (B) and Earthquake (E)
-CPT_Alarm = {
-    (True, True, True): 0.95,    # P(Alarm=True | Burglary=True, Earthquake=True)
-    (True, True, False): 0.05,   # P(Alarm=False | Burglary=True, Earthquake=True)
-    (True, False, True): 0.94,   # P(Alarm=True | Burglary=True, Earthquake=False)
-    (True, False, False): 0.06,  # P(Alarm=False | Burglary=True, Earthquake=False)
-    (False, True, True): 0.29,   # P(Alarm=True | Burglary=False, Earthquake=True)
-    (False, True, False): 0.71,  # P(Alarm=False | Burglary=False, Earthquake=True)
-    (False, False, True): 0.001, # P(Alarm=True | Burglary=False, Earthquake=False)
-    (False, False, False): 0.999 # P(Alarm=False | Burglary=False, Earthquake=False)
-}
-# John Calls (J) given Alarm (A)
-CPT_JohnCalls = {
-    (True, True): 0.9,  # P(JohnCalls=True | Alarm=True)
-    (False, True): 0.05,  # P(JohnCalls=False | Alarm=True)
-    (True, False): 0.1, # P(JohnCalls=True | Alarm=False)
-    (False, False): 0.95  # P(JohnCalls=False | Alarm=False)
-}
+    # Merge the two factors on shared variables
+    # the 'suffixes' here prevent weird column name interactions when they both have a 'prob' column
+    result = pd.merge(f1, f2, on=shared_vars, suffixes=('_f1', '_f2'))
 
-# Mary Calls (M) given Alarm (A)
-CPT_MaryCalls = {
-   (True, True): 0.7,  # P(MaryCalls=True | Alarm=True)
-    (True, False): 0.01,  # P(MaryCalls=True | Alarm=False)
-    (False, True): 0.3,  # P(MaryCalls=False | Alarm=True)
-    (False, False): 0.99  # P(MaryCalls=False | Alarm=False)
-}
 
-# Marginalize a variable
-def marginalize(factor, variable_index):
-    marginalized = {}
-    for values, prob in factor.items():
-        key = tuple(v for i, v in enumerate(values) if i != variable_index)
-        if key not in marginalized:
-            marginalized[key] = 0
-        marginalized[key] += prob
+    f1_prob_bool = False
+    f2_prob_bool = False
+    # Find probability columns in the first factor (f1)    
+    prob_cols_f1 = []
+    for col in f1.columns:
+        if 'P(' in col or 'prob' in col :  # Check if the column name represents a probability
+            prob_cols_f1.append(col)
+        if 'prob' in col:
+            f1_prob_bool = True
+
+    # Find probability columns in the second factor (f2)
+    prob_cols_f2 = []
+    for col in f2.columns:
+        if  'P(' in col or 'prob' in col:  # Check if the column name represents a probability
+            prob_cols_f2.append(col)
+        if 'prob' in col:
+            f2_prob_bool = True
+    # if both columns have a 'prob' column, must modify the names to prevent conflicts
+    if f1_prob_bool and f2_prob_bool:
+        # Modify the names in the `prob_cols_f1` and `prob_cols_f2` lists
+        # this is entirely because of the issues I had regarding the column names
+        # May seem convoluted, but it was necessary to get my implementation to work
+        updated_prob_cols_f1 = []
+        for col in prob_cols_f1:
+            if col == 'prob':
+                updated_prob_cols_f1.append('prob_f1')
+            else:
+                updated_prob_cols_f1.append(col)
+        prob_cols_f1 = updated_prob_cols_f1
+
+        # For prob_cols_f2
+        updated_prob_cols_f2 = []
+        for col in prob_cols_f2:
+            if col == 'prob':
+                updated_prob_cols_f2.append('prob_f2')
+            else:
+                updated_prob_cols_f2.append(col)
+        prob_cols_f2 = updated_prob_cols_f2
+
+    # Combine the probabilities
+    result['prob'] = result[prob_cols_f1[0]] * result[prob_cols_f2[0]]
+
+
+    columns_to_drop = []
+    for col in prob_cols_f1 + prob_cols_f2:
+        if col != 'prob':
+            columns_to_drop.append(col)
+
+    r = result.drop(columns=columns_to_drop)
+    print("result columns after dropping: ", r.columns)
+
+    return r
+
+def marginalize(factor, variable):
+    # Marginalize out a variable by summing over its values
+
+    # Exclude the variable to be marginalized from the groupby operation
+    grouped_columns = []
+    for col in factor.columns:
+        if col != variable and col != 'prob':
+            grouped_columns.append(col)
+    # Group by the remaining columns and sum probabilities
+    marginalized = factor.groupby(grouped_columns).agg({'prob': 'sum'}).reset_index()
+
     return marginalized
 
-# Normalize probabilities
-def normalize(factor):
-    total = sum(factor.values())
-    normalized = {}
-    for key, prob in factor.items():
-        normalized[key] = prob / total
-    return normalized
+
+def normalize(factor, prob_col='prob'):
+    # Normalize the probabilities to sum to 1.
+    total = factor[prob_col].sum()
+    factor[prob_col] = factor[prob_col] / total
+    return factor
 
 
-# Multiply factors
-def multiply_factors(factor1, factor2):
-    result = {}
-    for values1, prob1 in factor1.items():
-        print("values1",values1)
+def variable_elimination(query_var, evidence, factors, elimination_order):
+    # print("factors before elimination: \n", factors)
+    # add in the evidence here
+    for evidence_var, evidence_value in evidence.items():
+        for i in range (len(factors)):
+            if evidence_var in factors[i].columns:
+                factors[i] = factors[i][factors[i][evidence_var] == evidence_value].drop(columns=evidence_var)
+
+    # Eliminate variables not in query or evidence
+    for var in elimination_order:
+        if var not in query_var and var not in evidence:
+            # List comprehension here to get the relevant factors
+            # I'm not good with this style, but it makes the code more compact
+            relevant_factors = [f for f in factors if var in f.columns]
+            factors = [f for f in factors if var not in f.columns]
+
+            # Multiply relevant factors
+            product = relevant_factors[0]
+            for f in relevant_factors[1:]:
+                # USING PANDAS DATAFRAMES, the intersection tool just gets the common columns
+                shared_vars = f.columns.intersection(product.columns).tolist()
+                if 'prob' in shared_vars:
+                    shared_vars.remove('prob')
+                product = multiply_factors(product, f, shared_vars)
+            
+
+            # Marginalize the variable
+            product = marginalize(product, var)
+            factors.append(product)
         
-        for values2, prob2 in factor2.items():
-            print("values2",values2)
-            combined = values1 + values2
-            result[combined] = prob1 * prob2
+    # Multiply remaining factors to produce the joint distribution
+
+    result = factors[0]
+    for f in factors[1:]:
+        # Simplified shared_vars calculation
+        shared_vars=f.columns.intersection(result.columns).tolist()
+        result = multiply_factors(result, f, shared_vars)
+    
+    # Normalize the result
+
+    result = normalize(result)
     return result
 
-def variable_elimination(query, evidence):
-    """
-    Compute P(query | evidence) using Variable Elimination.
-    """
-    # Step 1: Initialize factors from CPTs
-    factors = {}
-
-    # Burglary
-    factors['Burglary'] = {}
-    for b in [True, False]:
-        factors['Burglary'][(b,)] = CPT_Burglary[b]
-
-    # Earthquake
-    factors['Earthquake'] = {}
-    for e in [True, False]:
-        factors['Earthquake'][(e,)] = CPT_Earthquake[e]
-
-    # Alarm
-    factors['Alarm'] = {}
-    for b in [True, False]:
-        for e in [True, False]:
-            for a in [True, False]:
-                factors['Alarm'][(b, e, a)] = CPT_Alarm[(b, e, a)]
-
-    # John Calls
-    factors['JohnCalls'] = {}
-    for a in [True, False]:
-        factors['JohnCalls'][(a,)] = CPT_JohnCalls[a]
 
 
-    print("factors",factors)
 
+# Define the query
+query_var = ['B']
+evidence = {'J': True}
+factors = [P_B, P_E, P_A_given_B_E, P_J_given_A, P_M_given_A]
+all_vars = ['E', 'A', 'M', 'J', 'E']  
 
-    # Step 3: Eliminate all variables except the query
-    for variable in ['Earthquake', 'Alarm']:
-        relevant_factors = []
-        for factor_name, factor in factors.items():
-            if variable in factor_name:
-                print("factor_name",factor_name)    
-                relevant_factors.append(factor)
-            
-            
-   
-        if not relevant_factors:
-            continue
+def get_elimination_order(query_var, evidence, all_vars):
+    vars_to_eliminate = []
 
-        # Multiply all relevant factors
-        product = relevant_factors[0]
-        print("relevant_factors",relevant_factors[0])
+    # Add variables to eliminate if they are not in the query or evidence
+    for var in all_vars:
+        if var not in query_var and var not in evidence:
+            if var not in vars_to_eliminate:
+                vars_to_eliminate.append(var)
+    return vars_to_eliminate
 
-        for factor in relevant_factors[1:]:
-            print("relevant_factors",relevant_factors[1])
-            product = multiply_factors(product, factor)
-        print("product",product)
-        # Marginalize out the variable
-        variable_index = 0 if variable == 'Burglary' else 1 if variable == 'Earthquake' else 2
-        product = marginalize(product, variable_index)
+elimination_order = get_elimination_order(query_var, evidence, all_vars)
 
-        # Update factors without deleting
-        updated_factors = {}
-        for factor_name, factor in factors.items():
-            if factor not in relevant_factors:
-                updated_factors[factor_name] = factor
-        updated_factors[variable] = product
-        factors = updated_factors
+result = variable_elimination(query_var, evidence, factors, elimination_order)
 
-    # Step 4: Combine remaining factors (Burglary only)
-    final_factor = None
-    for factor in factors.values():
-        if final_factor is None:
-            final_factor = factor
-        else:
-            final_factor = multiply_factors(final_factor, factor)
-
-    # Step 5: Normalize the final factor
-    return normalize(final_factor)
-
-if __name__ == "__main__":
-    # Query P(Burglary | JohnCalls = True)
-    evidence = {'JohnCalls': True}
-    query = 'Burglary'
-    result = variable_elimination(query, evidence)
-    # print(f"P({query} | JohnCalls=True):", result)
+# Print the result
+print("P(B | J = +j):")
+print(result)
